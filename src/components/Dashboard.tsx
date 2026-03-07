@@ -2,6 +2,8 @@ import React from 'react';
 import { Pet } from '../types';
 import { SPECIES } from '../data';
 import { Heart, Zap, Utensils } from 'lucide-react';
+import MonsterPortrait from './MonsterPortrait';
+import { getXpForNextLevel, getXpRemaining } from '../utils';
 
 type Props = {
   pets: Pet[];
@@ -22,7 +24,8 @@ export default function Dashboard({ pets, onSelectPet }: Props) {
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {pets.map(pet => {
         const species = SPECIES[pet.speciesId];
-        const nextLevelXp = pet.level * 100;
+        const nextLevelXp = getXpForNextLevel(pet.level);
+        const xpRemaining = getXpRemaining(pet.level, pet.xp);
         const xpPercentage = Math.min(100, (pet.xp / nextLevelXp) * 100);
 
         return (
@@ -32,9 +35,13 @@ export default function Dashboard({ pets, onSelectPet }: Props) {
             className="bg-stone-900 border border-stone-800 rounded-2xl p-6 text-left hover:border-amber-700/50 hover:bg-stone-800/50 transition-all group flex flex-col"
           >
             <div className="flex items-start justify-between mb-4">
-              <div className="text-4xl bg-stone-950 w-16 h-16 rounded-2xl flex items-center justify-center border border-stone-800 group-hover:scale-110 transition-transform">
-                {species.image}
-              </div>
+              <MonsterPortrait
+                speciesId={pet.speciesId}
+                alt={pet.name}
+                className="h-20 w-20 border-stone-800 transition-transform group-hover:scale-105"
+                imageClassName="object-contain p-2"
+                fallbackClassName="text-4xl"
+              />
               <div className="text-right">
                 <div className="text-xs font-mono text-stone-500 uppercase tracking-wider">Lvl {pet.level}</div>
                 <div className="text-xs font-mono text-stone-500">{species.alignment}</div>
@@ -57,6 +64,7 @@ export default function Dashboard({ pets, onSelectPet }: Props) {
               <div className="h-1.5 bg-stone-950 rounded-full overflow-hidden">
                 <div className="h-full bg-indigo-500 transition-all duration-500" style={{ width: `${xpPercentage}%` }} />
               </div>
+              <p className="mt-2 text-xs text-stone-500">{xpRemaining} XP to reach level {pet.level + 1}</p>
             </div>
           </button>
         );

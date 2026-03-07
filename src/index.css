@@ -6,3 +6,47 @@
   --font-serif: "Cinzel", ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 }
+
+@keyframes battle-cta-shimmer {
+  0% {
+    transform: translateX(-140%) skewX(-18deg);
+    opacity: 0;
+  }
+
+  18% {
+    opacity: 0.15;
+  }
+
+  50% {
+    opacity: 0.4;
+  }
+
+  100% {
+    transform: translateX(220%) skewX(-18deg);
+    opacity: 0;
+  }
+}
+
+.battle-start-shimmer {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.battle-start-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: -20% auto -20% -30%;
+  width: 38%;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 244, 214, 0.12) 30%,
+    rgba(255, 250, 231, 0.55) 50%,
+    rgba(255, 233, 173, 0.18) 70%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  filter: blur(2px);
+  pointer-events: none;
+  animation: battle-cta-shimmer 2.8s ease-in-out infinite;
+}

@@ -3,17 +3,17 @@ import { Pet } from '../types';
 import { SPECIES, ITEMS } from '../data';
 import { calculateMaxHp, generateId } from '../utils';
 import { Package, Plus } from 'lucide-react';
+import MonsterPortrait from './MonsterPortrait';
 
 type Props = {
   gold: number;
   setGold: (g: number) => void;
   inventory: Record<string, number>;
   setInventory: React.Dispatch<React.SetStateAction<Record<string, number>>>;
-  pets: Pet[];
   setPets: React.Dispatch<React.SetStateAction<Pet[]>>;
 };
 
-export default function Shop({ gold, setGold, inventory, setInventory, pets, setPets }: Props) {
+export default function Shop({ gold, setGold, inventory, setInventory, setPets }: Props) {
   const [namingSpecies, setNamingSpecies] = useState<string | null>(null);
   const [petName, setPetName] = useState('');
 
@@ -55,7 +55,7 @@ export default function Shop({ gold, setGold, inventory, setInventory, pets, set
         level: 1,
         xp: 0,
       };
-      setPets([...pets, newPet]);
+      setPets(prev => [...prev, newPet]);
       setNamingSpecies(null);
     }
   };
@@ -110,7 +110,7 @@ export default function Shop({ gold, setGold, inventory, setInventory, pets, set
         </h2>
         
         {namingSpecies && (
-          <div className="mb-8 bg-indigo-900/20 border border-indigo-500/30 rounded-3xl p-6 flex items-end gap-4">
+          <div className="mb-8 flex flex-col gap-4 rounded-3xl border border-indigo-500/30 bg-indigo-900/20 p-6 md:flex-row md:items-end">
             <div className="flex-1">
               <label className="block text-sm font-bold text-indigo-400 mb-2 uppercase tracking-wider">
                 Name your new {SPECIES[namingSpecies].name}
@@ -145,9 +145,13 @@ export default function Shop({ gold, setGold, inventory, setInventory, pets, set
             const isAffordable = gold >= species.cost;
             return (
               <div key={species.id} className={`bg-stone-900 border border-stone-800 rounded-3xl p-6 flex flex-col ${!isAffordable ? 'opacity-70' : ''}`}>
-                <div className="text-5xl mb-4 bg-stone-950 w-20 h-20 rounded-2xl flex items-center justify-center border border-stone-800">
-                  {species.image}
-                </div>
+                <MonsterPortrait
+                  speciesId={species.id}
+                  alt={species.name}
+                  className="mb-4 h-32 w-full"
+                  imageClassName="object-contain p-3"
+                  fallbackClassName="text-5xl"
+                />
                 <h3 className="text-xl font-serif font-bold text-stone-100 mb-2">{species.name}</h3>
                 <p className="text-sm text-stone-400 mb-6 flex-1">{species.description}</p>
                 

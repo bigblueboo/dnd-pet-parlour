@@ -2,6 +2,8 @@ import React from 'react';
 import { Pet } from '../types';
 import { SPECIES, ITEMS } from '../data';
 import { ArrowLeft, Heart, Utensils, Zap, Activity, Package } from 'lucide-react';
+import MonsterPortrait from './MonsterPortrait';
+import { applyXpGain, getXpForNextLevel, getXpRemaining } from '../utils';
 
 type Props = {
   pet: Pet;
@@ -11,10 +13,24 @@ type Props = {
   gold: number;
   setGold: (g: number) => void;
   onBack: () => void;
+  onBattleOpen: (petId: string) => void;
 };
 
-export default function PetDetail({ pet, setPets, inventory, setInventory, gold, setGold, onBack }: Props) {
+export default function PetDetail({
+  pet,
+  setPets,
+  inventory,
+  setInventory,
+  gold,
+  setGold,
+  onBack,
+  onBattleOpen,
+}: Props) {
   const species = SPECIES[pet.speciesId];
+  const [activityMessage, setActivityMessage] = React.useState<string | null>(null);
+  const nextLevelXp = getXpForNextLevel(pet.level);
+  const xpToNextLevel = getXpRemaining(pet.level, pet.xp);
+  const isDowned = pet.hp <= 0;
 
   const updatePet = (updates: Partial<Pet>) => {
     setPets(prev => prev.map(p => p.id === pet.id ? { ...p, ...updates } : p));
@@ -33,28 +49,45 @@ export default function PetDetail({ pet, setPets, inventory, setInventory, gold,
       updatePet({
         hunger: Math.min(100, pet.hunger + 30),
         happiness: Math.min(100, pet.happiness + 10),
-        hp: Math.min(pet.maxHp, pet.hp + 5)
+        hp: isDowned ? pet.hp : Math.min(pet.maxHp, pet.hp + 5)
       });
+      setActivityMessage(
+        isDowned
+          ? `${pet.name} ate, but still needs healing before it can get back up.`
+          : `${pet.name} devoured a meal and looks sturdier.`,
+      );
     }
   };
 
   const handleExercise = () => {
     if (pet.energy >= 20 && pet.hunger >= 10) {
-      updatePet({
+      const result = applyXpGain({
+        ...pet,
         energy: pet.energy - 20,
         hunger: pet.hunger - 10,
         happiness: Math.min(100, pet.happiness + 20),
-        xp: pet.xp + 10
-      });
+      }, 10);
+      updatePet(result.pet);
+      setActivityMessage(
+        result.levelsGained > 0
+          ? `${pet.name} gained 10 XP, reached level ${result.pet.level}, and needs ${result.xpToNextLevel} XP for the next level.`
+          : `${pet.name} gained 10 XP and needs ${result.xpToNextLevel} XP for level ${result.pet.level + 1}.`,
+      );
     }
   };
 
   const handleRest = () => {
+    if (isDowned) {
+      setActivityMessage(`${pet.name} cannot rest back from 0 HP. Use healing to revive it.`);
+      return;
+    }
+
     updatePet({
       energy: Math.min(100, pet.energy + 40),
       hunger: Math.max(0, pet.hunger - 10),
       hp: Math.min(pet.maxHp, pet.hp + 10)
     });
+    setActivityMessage(`${pet.name} rested and recovered some strength.`);
   };
 
   const handleHeal = () => {
@@ -63,6 +96,7 @@ export default function PetDetail({ pet, setPets, inventory, setInventory, gold,
       updatePet({
         hp: pet.maxHp
       });
+      setActivityMessage(`${pet.name} was healed to full health for 20 gold.`);
     }
   };
 
@@ -73,23 +107,31 @@ export default function PetDetail({ pet, setPets, inventory, setInventory, gold,
     if (item.type === 'heal' && pet.hp < pet.maxHp) {
       consumeItem(itemId);
       updatePet({ hp: Math.min(pet.maxHp, pet.hp + item.value) });
+      setActivityMessage(`${item.name} restored ${item.value} HP.`);
     } else if (item.type === 'social' && pet.happiness < 100) {
       consumeItem(itemId);
       updatePet({ happiness: Math.min(100, pet.happiness + item.value) });
+      setActivityMessage(`${item.name} raised ${pet.name}'s happiness.`);
     }
   };
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-5xl mx-auto">
       <button onClick={onBack} className="flex items-center gap-2 text-stone-400 hover:text-stone-200 mb-8 transition-colors">
         <ArrowLeft size={20} />
         <span>Back to Parlour</span>
       </button>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:gap-8">
         <div className="lg:col-span-1 space-y-6">
           <div className="bg-stone-900 border border-stone-800 rounded-3xl p-8 flex flex-col items-center text-center">
-            <div className="text-8xl mb-6">{species.image}</div>
+            <MonsterPortrait
+              speciesId={pet.speciesId}
+              alt={pet.name}
+              className="mb-6 h-56 w-full max-w-xs"
+              imageClassName="object-contain p-5"
+              fallbackClassName="text-8xl"
+            />
             <h2 className="text-3xl font-serif font-bold text-stone-100 mb-2">{pet.name}</h2>
             <p className="text-stone-400 mb-4">{species.name}</p>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-stone-950 border border-stone-800 text-xs font-mono text-stone-400">
@@ -121,7 +163,7 @@ export default function PetDetail({ pet, setPets, inventory, setInventory, gold,
                 label="Rest" 
                 cost="Free" 
                 onClick={handleRest} 
-                disabled={pet.energy >= 100} 
+                disabled={pet.energy >= 100 || isDowned} 
                 color="hover:bg-amber-900/30 hover:text-amber-400 hover:border-amber-800"
               />
               <ActionButton 
@@ -132,8 +174,22 @@ export default function PetDetail({ pet, setPets, inventory, setInventory, gold,
                 disabled={gold < 20 || pet.hp >= pet.maxHp} 
                 color="hover:bg-red-900/30 hover:text-red-400 hover:border-red-800"
               />
+              <ActionButton
+                icon={Activity}
+                label="Battle"
+                cost="Open scene"
+                onClick={() => onBattleOpen(pet.id)}
+                disabled={pet.hp <= 0}
+                color="hover:bg-violet-900/30 hover:text-violet-300 hover:border-violet-800"
+              />
             </div>
           </div>
+
+          {activityMessage ? (
+            <div className="rounded-3xl border border-indigo-900/40 bg-indigo-950/20 p-5 text-sm text-indigo-100">
+              {activityMessage}
+            </div>
+          ) : null}
         </div>
 
         <div className="lg:col-span-2 space-y-6">
@@ -148,11 +204,12 @@ export default function PetDetail({ pet, setPets, inventory, setInventory, gold,
             <div className="mt-8 pt-8 border-t border-stone-800">
               <div className="flex justify-between items-end mb-2">
                 <span className="text-sm font-bold text-stone-500 uppercase tracking-wider">Level {pet.level}</span>
-                <span className="text-xs font-mono text-stone-500">{pet.xp} / {pet.level * 100} XP</span>
+                <span className="text-xs font-mono text-stone-500">{pet.xp} / {nextLevelXp} XP</span>
               </div>
               <div className="h-1.5 bg-stone-950 rounded-full overflow-hidden">
-                <div className="h-full bg-indigo-500" style={{ width: `${Math.min(100, (pet.xp / (pet.level * 100)) * 100)}%` }} />
+                <div className="h-full bg-indigo-500" style={{ width: `${Math.min(100, (pet.xp / nextLevelXp) * 100)}%` }} />
               </div>
+              <p className="mt-3 text-sm text-stone-500">{xpToNextLevel} XP until level {pet.level + 1}</p>
             </div>
           </div>
 
@@ -200,7 +257,7 @@ export default function PetDetail({ pet, setPets, inventory, setInventory, gold,
 
           <div className="bg-stone-900 border border-stone-800 rounded-3xl p-8">
             <h3 className="text-xl font-serif font-bold text-stone-100 mb-6">Stats</h3>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
               {Object.entries(pet.stats).map(([stat, value]) => (
                 <div key={stat} className="bg-stone-950 rounded-xl p-4 border border-stone-800/50 text-center">
                   <div className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-1">{stat}</div>

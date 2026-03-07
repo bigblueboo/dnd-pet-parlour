@@ -9,11 +9,18 @@ export type Stats = {
 
 export type Alignment = 'Lawful Good' | 'Neutral Good' | 'Chaotic Good' | 'Lawful Neutral' | 'True Neutral' | 'Chaotic Neutral' | 'Lawful Evil' | 'Neutral Evil' | 'Chaotic Evil' | 'Unaligned';
 
+export type SpecialResource = 'energy' | 'hunger' | 'hp';
+export type PortraitMilestone = 1 | 5 | 10;
+export type ThreatTier = 'trivial' | 'low' | 'standard' | 'elite' | 'boss';
+
 export type SpecialAbility = {
   name: string;
   description: string;
   cooldown: number;
   damageMultiplier: number;
+  resource: SpecialResource;
+  cost: number;
+  accuracyBonus: number;
 };
 
 export type Species = {
@@ -21,6 +28,7 @@ export type Species = {
   name: string;
   description: string;
   baseStats: Stats;
+  growth: Stats;
   alignment: Alignment;
   diet: string;
   image: string;
@@ -42,7 +50,7 @@ export type Pet = {
   xp: number;
 };
 
-export type Hero = {
+export type Encounter = {
   id: string;
   name: string;
   description: string;
@@ -51,6 +59,8 @@ export type Hero = {
   maxHp: number;
   stats: Stats;
   reward: number;
+  icon: string;
+  tier: ThreatTier;
 };
 
 export type ItemType = 'heal' | 'social' | 'food' | 'buff';
