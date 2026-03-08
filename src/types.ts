@@ -23,6 +23,14 @@ export type SpecialAbility = {
   accuracyBonus: number;
 };
 
+export type EncounterAbility = {
+  name: string;
+  description: string;
+  cooldown: number;
+  damageMultiplier: number;
+  accuracyBonus: number;
+};
+
 export type Species = {
   id: string;
   name: string;
@@ -61,6 +69,7 @@ export type Encounter = {
   reward: number;
   icon: string;
   tier: ThreatTier;
+  specialAbility: EncounterAbility;
 };
 
 export type ItemType = 'heal' | 'social' | 'food' | 'buff';
@@ -73,4 +82,22 @@ export type Item = {
   type: ItemType;
   value: number;
   icon: string;
+};
+
+export type HistoryEventType = 'battle-win' | 'battle-loss' | 'level-up' | 'monster-acquired';
+
+export type HistoryEvent = {
+  id: string;
+  type: HistoryEventType;
+  createdAt: string;
+  title: string;
+  description: string;
+  petId?: string;
+  petName?: string;
+  speciesId?: string;
+  heroId?: string;
+  heroName?: string;
+  level?: number;
+  goldEarned?: number;
+  xpEarned?: number;
 };

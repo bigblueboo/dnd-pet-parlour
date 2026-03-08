@@ -1,4 +1,4 @@
-import type { Pet } from './types';
+import type { EncounterAbility, Pet, SpecialAbility, SpecialResource } from './types';
 
 export const rollDice = (sides: number) => Math.floor(Math.random() * sides) + 1;
 export const getModifier = (stat: number) => Math.floor((stat - 10) / 2);
@@ -11,6 +11,38 @@ export const generateId = () => Math.random().toString(36).substr(2, 9);
 export const getXpForNextLevel = (level: number) => level * 100;
 
 export const getXpRemaining = (level: number, xp: number) => Math.max(0, getXpForNextLevel(level) - xp);
+
+export function getAttackDamageRange(strength: number): { min: number; max: number } {
+  const modifier = getModifier(strength);
+  return {
+    min: Math.max(1, 1 + modifier),
+    max: Math.max(1, 8 + modifier),
+  };
+}
+
+export function getResourceLabel(resource: SpecialResource): string {
+  if (resource === 'hp') {
+    return 'Health';
+  }
+
+  if (resource === 'hunger') {
+    return 'Hunger';
+  }
+
+  return 'Energy';
+}
+
+export function getSpecialEffectText(specialAbility: Pick<SpecialAbility | EncounterAbility, 'damageMultiplier' | 'accuracyBonus'>): string {
+  const damagePercent = Math.round(specialAbility.damageMultiplier * 100);
+  const accuracyText =
+    specialAbility.accuracyBonus > 0 ? ` with +${specialAbility.accuracyBonus} accuracy` : '';
+
+  return `Deals ${damagePercent}% of normal attack damage${accuracyText}.`;
+}
+
+export function getSpecialCostText(specialAbility: SpecialAbility): string {
+  return `${specialAbility.cost} ${getResourceLabel(specialAbility.resource)}`;
+}
 
 export function applyXpGain(pet: Pet, xpGain: number): {
   pet: Pet;

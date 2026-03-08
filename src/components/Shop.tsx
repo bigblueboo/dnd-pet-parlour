@@ -5,6 +5,8 @@ import { calculateMaxHp, generateId } from '../utils';
 import { Package, Plus } from 'lucide-react';
 import MonsterPortrait from './MonsterPortrait';
 
+const EXCLUDED_ADOPTION_SPECIES_IDS = new Set(['angry_sheep', 'pet_rat']);
+
 type Props = {
   gold: number;
   setGold: (g: number) => void;
@@ -61,7 +63,9 @@ export default function Shop({ gold, setGold, inventory, setInventory, setPets }
   };
 
   // Filter logic for species
-  const allSpecies = Object.values(SPECIES).sort((a, b) => a.cost - b.cost);
+  const allSpecies = Object.values(SPECIES)
+    .filter((species) => !EXCLUDED_ADOPTION_SPECIES_IDS.has(species.id))
+    .sort((a, b) => a.cost - b.cost);
   const affordableSpecies = allSpecies.filter(s => gold >= s.cost);
   const unaffordableSpecies = allSpecies.filter(s => gold < s.cost).slice(0, 3);
   const displaySpecies = [...affordableSpecies, ...unaffordableSpecies];
@@ -81,8 +85,13 @@ export default function Shop({ gold, setGold, inventory, setInventory, setPets }
                 <div className="text-4xl bg-stone-950 w-16 h-16 rounded-2xl flex items-center justify-center border border-stone-800">
                   {item.icon}
                 </div>
-                <div className="text-xs font-mono text-stone-500 uppercase tracking-wider bg-stone-950 px-2 py-1 rounded border border-stone-800">
-                  {item.type}
+                <div className="flex flex-col items-end gap-2">
+                  <div className="text-xs font-mono text-stone-500 uppercase tracking-wider bg-stone-950 px-2 py-1 rounded border border-stone-800">
+                    {item.type}
+                  </div>
+                  <div className="text-xs font-mono text-emerald-300 bg-emerald-950/40 px-2 py-1 rounded border border-emerald-900/40">
+                    Owned: {inventory[item.id] || 0}
+                  </div>
                 </div>
               </div>
               <h3 className="text-lg font-bold text-stone-200 mb-1">{item.name}</h3>

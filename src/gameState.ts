@@ -1,8 +1,8 @@
 import { SPECIES } from './data';
-import type { Pet } from './types';
+import type { HistoryEvent, Pet } from './types';
 import { calculateMaxHp, generateId } from './utils';
 
-export type GameView = 'dashboard' | 'pet' | 'shop';
+export type GameView = 'dashboard' | 'pet' | 'shop' | 'history';
 
 export type GameState = {
   view: GameView;
@@ -11,6 +11,7 @@ export type GameState = {
   inventory: Record<string, number>;
   pets: Pet[];
   highestDefeatedHeroIndex: number;
+  history: HistoryEvent[];
 };
 
 const STORAGE_VERSION = 1;
@@ -49,6 +50,7 @@ export function createDefaultGameState(): GameState {
       pet_brush: 1,
     },
     pets: [starterPet],
+    history: [],
   };
 }
 
@@ -59,6 +61,21 @@ function isPet(candidate: unknown): candidate is Pet {
 
   const pet = candidate as Pet;
   return typeof pet.id === 'string' && typeof pet.speciesId === 'string' && typeof pet.name === 'string';
+}
+
+function isHistoryEvent(candidate: unknown): candidate is HistoryEvent {
+  if (!candidate || typeof candidate !== 'object') {
+    return false;
+  }
+
+  const event = candidate as HistoryEvent;
+  return (
+    typeof event.id === 'string' &&
+    typeof event.type === 'string' &&
+    typeof event.createdAt === 'string' &&
+    typeof event.title === 'string' &&
+    typeof event.description === 'string'
+  );
 }
 
 export function loadGameState(): GameState {
@@ -86,7 +103,7 @@ export function loadGameState(): GameState {
     const view = parsed.data.view === 'pet' && !selectedPetId ? 'dashboard' : parsed.data.view ?? defaults.view;
 
     return {
-      view: view === 'pet' || view === 'shop' ? view : 'dashboard',
+      view: view === 'pet' || view === 'shop' || view === 'history' ? view : 'dashboard',
       selectedPetId,
       gold: typeof parsed.data.gold === 'number' ? parsed.data.gold : defaults.gold,
       highestDefeatedHeroIndex:
@@ -98,6 +115,7 @@ export function loadGameState(): GameState {
           ? { ...defaults.inventory, ...parsed.data.inventory }
           : defaults.inventory,
       pets,
+      history: Array.isArray(parsed.data.history) ? parsed.data.history.filter(isHistoryEvent) : defaults.history,
     };
   } catch {
     return createDefaultGameState();
